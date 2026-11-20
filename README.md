@@ -1,62 +1,101 @@
-CareLoop – Hospital Readmission Risk Prediction
+🏥 CareLoop
 
-CareLoop is a Machine Learning-based application designed to predict the risk of hospital readmission. It helps care coordinators and healthcare professionals identify patients who may require additional attention and follow-up after discharge.
+Hospital Readmission Risk Prediction System
 
-The project uses Machine Learning classification algorithms to analyse patient information and estimate the likelihood of readmission.
+Predict early. Follow up better. Care beyond discharge.
+
+CareLoop is a Machine Learning-based hospital readmission prediction system that helps identify patients who may be at risk of returning to the hospital after discharge.
+
+The application uses patient information to generate readmission risk predictions, helping care coordinators and healthcare professionals prioritize follow-up care.
 
 ---
 
-1. Project Objectives
+📌 Overview
 
-- Predict the possibility of hospital readmission using Machine Learning.
-- Identify patients who may require timely follow-up care.
-- Compare different Machine Learning algorithms and select a suitable model.
-- Store patient information and prediction results in a database.
-- Provide a simple web application for interacting with the trained model.
+Hospital readmissions can increase healthcare costs and create additional challenges for patients, families and hospitals.
 
-2. Technologies Used
+CareLoop aims to address this problem by using Machine Learning to analyse patient data and predict the possibility of readmission.
 
-Component| Technologies
+The system combines a trained ML model, a database and a web application to provide a simple way to register patients, generate predictions and view results.
+
+✨ Key Features
+
+- Patient Registration: Enter and store patient information in the database.
+- Readmission Prediction: Predict the possibility of hospital readmission using a trained Machine Learning model.
+- Model Comparison: Evaluate Decision Tree, Logistic Regression and Random Forest classifiers.
+- Risk Assessment: Display the model's predicted outcome and probability.
+- Patient Records: Maintain registered patient information.
+- Prediction History: Store and retrieve previous prediction results.
+- Web Dashboard: View patient and prediction information through a user-friendly interface.
+
+🧠 Machine Learning Approach
+
+We experimented with three classification algorithms using the same preprocessed training and testing datasets.
+
+Model| Accuracy| Precision| Recall| F1 Score
+Decision Tree| 59.74%| 14.70%| 57.69%| 23.42%
+Logistic Regression| 65.54%| 16.65%| 55.60%| 25.62%
+Random Forest| 85.24%| 25.68%| 20.22%| 22.63%
+
+Model Selection
+
+After comparing the evaluation results, Logistic Regression was selected for backend integration because it achieved the highest F1 score among the three models.
+
+The models were compared using accuracy, precision, recall, F1 score and ROC-AUC. We considered more than accuracy alone when selecting the model.
+
+All three model training notebooks and their evaluation results are maintained in the "models/" directory.
+
+⚙️ Technology Stack
+
+Area| Technologies
 Programming Language| Python
-Machine Learning| Scikit-learn
 Data Processing| Pandas, NumPy
-Model Training| Jupyter Notebook
+Machine Learning| Scikit-learn
+Model Development| Jupyter Notebook
+Model Storage| Joblib
 Backend| FastAPI
 Database| SQLite
 Frontend| HTML, CSS, JavaScript
-Model Saving| Joblib
 API Testing| Postman
-Public URL Generation| ngrok
-Version Control| Git and GitHub
+Public Access| ngrok
+Version Control| Git, GitHub
 
-3. Machine Learning Models
+🔄 How CareLoop Works
 
-Three classification algorithms were trained and evaluated using the preprocessed dataset.
+        PATIENT REGISTRATION
+                 |
+                 v
+        Enter Patient Details
+                 |
+                 v
+          FASTAPI BACKEND
+                 |
+                 v
+          SQLITE DATABASE
+        (Save Patient Details)
+                 |
+                 v
+       Retrieve Patient Record
+                 |
+                 v
+       PREPROCESSING PIPELINE
+                 |
+                 v
+       LOGISTIC REGRESSION
+                 |
+                 v
+        READMISSION PREDICTION
+                 |
+                 v
+       Save Prediction in Database
+                 |
+                 v
+          CARELOOP DASHBOARD
+                 |
+                 v
+           Display Result
 
-1. Decision Tree Classifier
-2. Logistic Regression
-3. Random Forest Classifier
-
-Model Comparison
-
-The following results were obtained during the model evaluation:
-
-Evaluation Metric| Decision Tree| Logistic Regression| Random Forest
-Accuracy| 59.74%| 65.54%| 85.24%
-Precision| 14.70%| 16.65%| 25.68%
-Recall| 57.69%| 55.60%| 20.22%
-F1 Score| 23.42%| 25.62%| 22.63%
-ROC-AUC| 0.608| 0.656| 0.673
-
-Selected Model: Logistic Regression
-
-After comparing the three models, Logistic Regression was selected for backend integration because it achieved the highest F1 score among the evaluated models.
-
-The selection considers the balance between precision and recall rather than accuracy alone.
-
-The other two models are retained in the project for comparison.
-
-4. Project Structure
+📂 Project Structure
 
 CareLoop/
 │
@@ -93,105 +132,93 @@ CareLoop/
 │       └── metrics.json
 │
 ├── evaluation/
-│   └── model_comparison
-│
 ├── examples/
-│   └── Postman test files
-│
 ├── requirements.txt
 └── README.md
 
-5. Application Workflow
+🚀 Getting Started
 
-1. The user enters patient information through the CareLoop frontend.
-2. The FastAPI backend receives the information.
-3. Patient details are stored in the SQLite database.
-4. The backend retrieves the registered patient's information using the patient ID.
-5. The selected Logistic Regression model processes the patient information.
-6. The model generates a readmission prediction.
-7. The prediction result is stored in the database.
-8. The frontend displays the prediction to the user.
+Follow these steps to run CareLoop on your local machine.
 
-6. Database Design
+Prerequisites
 
-CareLoop uses SQLite for storing patient information and prediction results.
+- Python installed on your system
+- Visual Studio Code
+- Git
+- Required Python libraries
 
-The main database tables are:
-
-Table| Purpose
-Patients| Stores registered patient details
-Predictions| Stores the predicted readmission results
-Followups| Stores follow-up information
-
-7. Installation and Setup
-
-Step 1: Clone the repository
+1. Clone the repository
 
 git clone https://github.com/hrithikaodapally/hospital-readmission-prediction.git
 
-Step 2: Open the project folder
+2. Navigate to the project folder
 
 cd hospital-readmission-prediction
 
-Step 3: Install dependencies
+3. Install the required libraries
 
 python -m pip install -r requirements.txt
 
-Step 4: Start the FastAPI server
+4. Start the FastAPI server
 
 python -m uvicorn backend.main:app --reload
 
-Step 5: Open the application
+5. Open CareLoop
 
 Application:
 
 http://127.0.0.1:8000
 
-FastAPI documentation:
+FastAPI API Documentation:
 
 http://127.0.0.1:8000/docs
 
-8. API Testing
+The API documentation can be used to inspect and test the available endpoints.
 
-The FastAPI endpoints can be tested using Postman.
+🧪 API Testing
 
-- Select the POST method for prediction requests.
-- Send patient information in JSON format.
-- Verify that the API returns the prediction result.
-- Confirm that patient details and prediction results are stored in the database.
+The backend APIs can be tested using Postman.
 
-9. Public URL Generation
+The testing process includes:
 
-The application can be made accessible over the internet using ngrok.
+1. Registering a patient.
+2. Checking whether the patient information is saved in SQLite.
+3. Sending a prediction request for the registered patient.
+4. Checking the returned prediction and probability.
+5. Verifying that the prediction is stored in the database.
 
-After starting the FastAPI server, execute:
+🌐 Public Access Using ngrok
+
+CareLoop can be made accessible over the internet using ngrok.
+
+Once the local FastAPI server is running, execute:
 
 ngrok http 8000
 
-ngrok generates a public HTTPS URL that can be shared for application access and API testing.
+ngrok generates a public HTTPS URL that can be shared for accessing the running application and API documentation.
 
-The local server and ngrok tunnel must remain active while using the public URL.
+The local backend and ngrok tunnel must remain active while the public URL is being used.
 
-10. Team Members
+👥 Project Team
 
-This project is developed by the following team members:
+Developed as part of the Student Development Cell (SDC) Project.
 
-S. No.| GitHub Username
-1| "hrithikaodapally" (https://github.com/hrithikaodapally)
-2| "deekshithareddyshada" (https://github.com/deekshithareddyshada)
-3| "swetchakasam.18" (https://github.com/swetchakasam.18)
-4| "JAMANEERAJSAI" (https://github.com/JAMANEERAJSAI)
+Team Member| GitHub
+Hrithika Odapally| "@hrithikaodapally" (https://github.com/hrithikaodapally)
+Deekshitha Reddy Shada| "@deekshithareddyshada" (https://github.com/deekshithareddyshada)
+Swetcha Kasam| "swetchakasam.18"
+Neeraj Sai| "@JAMANEERAJSAI" (https://github.com/JAMANEERAJSAI)
 
-11. Conclusion
+🎯 Project Goal
 
-CareLoop combines Machine Learning, database management and web application development to build a hospital readmission risk prediction system.
-
-By comparing multiple classification algorithms and integrating the selected model with a FastAPI backend, the project provides an application for generating and viewing patient readmission predictions.
-
-Note: CareLoop is an academic prototype. Its predictions are not clinically validated and should not be used as a substitute for professional medical judgement.
+Our goal with CareLoop is to demonstrate how Machine Learning can be integrated into a practical healthcare application to support early identification of patients who may need additional attention after hospital discharge.
 
 ---
 
-Project Name: CareLoop
-Project Domain: Healthcare and Machine Learning
-Repository: https://github.com/hrithikaodapally/hospital-readmission-prediction
+⚠️ Disclaimer
+
+CareLoop is an academic project developed for educational purposes. Its predictions are based on the available dataset and have not been clinically validated. It is not intended for actual medical diagnosis or treatment decisions.
+
+---
+
+CareLoop | Predict Early. Follow Up Better.
