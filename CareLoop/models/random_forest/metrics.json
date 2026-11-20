@@ -1,0 +1,47 @@
+{
+  "model": "Random Forest Classifier",
+  "accuracy": 0.8523792983674887,
+  "precision": 0.256788665879575,
+  "recall": 0.20223152022315202,
+  "f1_score": 0.22626788036410922,
+  "roc_auc": 0.6729536637568707,
+  "confusion_matrix": [
+    [
+      16743,
+      1259
+    ],
+    [
+      1716,
+      435
+    ]
+  ],
+  "train_rows": 81613,
+  "test_rows": 20153,
+  "processed_features": 2406,
+  "positive_class_definition": "1 = readmitted within 30 days; 0 = not readmitted within 30 days",
+  "training_seconds": 17.28,
+  "configuration": {
+    "bootstrap": true,
+    "ccp_alpha": 0.0,
+    "class_weight": {
+      "0": 1,
+      "1": 8
+    },
+    "criterion": "gini",
+    "max_depth": null,
+    "max_features": "sqrt",
+    "max_leaf_nodes": null,
+    "max_samples": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 2,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "n_estimators": 120,
+    "n_jobs": -1,
+    "oob_score": false,
+    "random_state": 42,
+    "verbose": 0,
+    "warm_start": false
+  }
+}

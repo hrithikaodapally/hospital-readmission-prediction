@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLoop – Patients</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>Patients</h1>
+        <p class="muted">Create, view, update and delete patient records, and run predictions.</p>
+      </div>
+      <a class="btn" href="patient-form.html">＋ New patient</a>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search by name, ID or diagnosis…">
+        <select id="filter">
+          <option value="all">All risk levels</option>
+          <option value="High">High</option>
+          <option value="Elevated">Elevated</option>
+          <option value="Low">Low</option>
+          <option value="none">Not predicted yet</option>
+        </select>
+      </div>
+      <div class="table-wrap" id="table-box"><div class="empty"><span class="spinner"></span></div></div>
+    </div>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    let allPatients = [];
+
+    async function loadPatients() {
+      try {
+        allPatients = await api.listPatients();
+        render();
+      } catch (error) {
+        document.getElementById("table-box").innerHTML = `<div class="empty">Could not load patients. Is the API running?<br><small>${esc(error.message)}</small></div>`;
+      }
+    }
+
+    function riskOf(patient) {
+      const p = patient.latest_prediction;
+      return p ? riskLevel(p.readmission_probability, p.prediction) : null;
+    }
+
+    function render() {
+      const text = document.getElementById("search").value.trim().toLowerCase();
+      const filter = document.getElementById("filter").value;
+
+      const rows = allPatients.filter((patient) => {
+        const d = patient.patient_data;
+        const haystack = [patient.patient_id, d.patient_label, d.diag_1, d.medical_specialty].join(" ").toLowerCase();
+        if (text && !haystack.includes(text)) return false;
+        const risk = riskOf(patient);
+        if (filter === "none") return risk === null;
+        if (filter !== "all") return risk && risk.name === filter;
+        return true;
+      });
+
+      const box = document.getElementById("table-box");
+      if (rows.length === 0) {
+        box.innerHTML = `<div class="empty">${allPatients.length ? "No patients match your search." : "No patients yet. Click “New patient” to add one."}</div>`;
+        return;
+      }
+
+      box.innerHTML = `<table>
+        <thead><tr><th>ID</th><th>Patient</th><th>Age</th><th>Stay</th><th>Diagnosis</th><th>Probability</th><th>Risk</th><th>Actions</th></tr></thead>
+        <tbody>${rows.map((patient) => {
+          const d = patient.patient_data;
+          const prediction = patient.latest_prediction;
+          const risk = riskOf(patient);
+          return `<tr>
+            <td>#${patient.patient_id}</td>
+            <td>${esc(d.patient_label || "—")}</td>
+            <td>${esc(d.age)}</td>
+            <td>${esc(d.time_in_hospital)} d</td>
+            <td>${esc(d.diag_1)}</td>
+            <td>${prediction ? percent(prediction.readmission_probability) : "—"}</td>
+            <td>${risk ? `<span class="badge ${risk.css}">${risk.name}</span>` : `<span class="badge none">Not predicted</span>`}</td>
+            <td><div class="row-actions">
+              ${prediction ? `<a class="btn ghost small" href="result.html?id=${patient.patient_id}">View</a>` : ""}
+              <button class="btn small" data-action="predict" data-id="${patient.patient_id}">${prediction ? "Re-run" : "Predict"}</button>
+              <a class="btn ghost small" href="patient-form.html?id=${patient.patient_id}">Edit</a>
+              <button class="btn danger small" data-action="delete" data-id="${patient.patient_id}">Delete</button>
+            </div></td>
+          </tr>`;
+        }).join("")}</tbody></table>`;
+    }
+
+    // One click listener for all the buttons inside the table
+    document.getElementById("table-box").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const id = button.dataset.id;
+
+      if (button.dataset.action === "delete") {
+        if (!confirm(`Delete patient #${id} and all of their predictions?`)) return;
+        try {
+          await api.deletePatient(id);
+          showToast("Patient deleted", "success");
+          loadPatients();
+        } catch (error) { showToast(error.message, "error"); }
+      }
+
+      if (button.dataset.action === "predict") {
+        button.disabled = true;
+        button.textContent = "…";
+        try {
+          await api.predict(id);
+          window.location.href = "result.html?id=" + id;
+        } catch (error) {
+          showToast(error.message, "error");
+          button.disabled = false;
+          button.textContent = "Predict";
+        }
+      }
+    });
+
+    document.getElementById("search").addEventListener("input", render);
+    document.getElementById("filter").addEventListener("change", render);
+    loadPatients();
+  </script>
+</body>
+</html>

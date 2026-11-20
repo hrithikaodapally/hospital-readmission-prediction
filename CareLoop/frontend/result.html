@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLoop – Prediction result</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Google Charts (Google API) -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-head">
+      <div>
+        <p class="muted" style="margin:0"><a href="patients.html">← Patients</a></p>
+        <h1 id="title">Prediction result</h1>
+      </div>
+      <div class="form-actions" style="margin:0">
+        <button class="btn" id="rerun">Run prediction again</button>
+        <a class="btn ghost" id="edit-link" href="#">Edit patient</a>
+      </div>
+    </div>
+
+    <div id="content"><div class="empty"><span class="spinner"></span></div></div>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    const patientId = new URLSearchParams(window.location.search).get("id");
+
+    async function loadResult() {
+      if (!patientId) { document.getElementById("content").innerHTML = `<div class="empty">No patient selected.</div>`; return; }
+      document.getElementById("edit-link").href = "patient-form.html?id=" + patientId;
+
+      try {
+        // Get the patient and all predictions, then keep this patient's predictions
+        const [patient, predictions] = await Promise.all([api.getPatient(patientId), api.listPredictions()]);
+        const mine = predictions.filter((p) => p.patient_id === Number(patientId));
+        render(patient.patient_data, mine);
+      } catch (error) {
+        document.getElementById("content").innerHTML = `<div class="empty">${esc(error.message)}</div>`;
+      }
+    }
+
+    function render(d, history) {
+      const label = d.patient_label ? ` – ${d.patient_label}` : "";
+      document.getElementById("title").textContent = `Patient #${patientId}${label}`;
+
+      if (history.length === 0) {
+        document.getElementById("content").innerHTML = `<div class="card empty">No prediction yet for this patient. Click “Run prediction again” above.</div>`;
+        return;
+      }
+
+      const latest = history[0]; // the API lists newest first
+      const risk = riskLevel(latest.readmission_probability, latest.prediction);
+      const flagged = latest.prediction === 1;
+
+      const advice = flagged
+        ? "The model expects this patient may be readmitted within 30 days. A care team could consider a follow-up call, medication review or early outpatient appointment."
+        : "The model does not expect a readmission within 30 days. Routine discharge follow-up is usually sufficient, but clinical judgement always comes first.";
+
+      document.getElementById("content").innerHTML = `
+        <div class="result-top">
+          <div class="card">
+            <div class="muted">Readmission probability</div>
+            <div id="gauge" class="chart-box" style="min-height:200px"></div>
+            <div class="verdict ${flagged ? "high" : "low"}">${flagged ? "Readmission likely within 30 days" : "Readmission not expected"}</div>
+            <span class="badge ${risk.css}">${risk.name} risk · ${percent(latest.readmission_probability)}</span>
+            <p style="margin-top:.8rem" class="muted">${advice}</p>
+          </div>
+          <div class="card">
+            <h2>Patient summary</h2>
+            <dl class="summary-list">
+              ${item("Age group", d.age)}
+              ${item("Gender", d.gender)}
+              ${item("Race", d.race === "?" ? "Unknown" : d.race)}
+              ${item("Admission type", optionLabel("admission_type_id", d.admission_type_id))}
+              ${item("Specialty", d.medical_specialty === "?" ? "Not recorded" : d.medical_specialty)}
+              ${item("Days in hospital", d.time_in_hospital)}
+              ${item("Lab procedures", d.num_lab_procedures)}
+              ${item("Medications", d.num_medications)}
+              ${item("Diagnoses", d.number_diagnoses)}
+              ${item("Prior inpatient visits", d.number_inpatient)}
+              ${item("Prior emergency visits", d.number_emergency)}
+              ${item("HbA1c", d.A1Cresult ?? "Not measured")}
+              ${item("Insulin", d.insulin)}
+              ${item("Medication changed", d.change === "Ch" ? "Yes" : "No")}
+            </dl>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <h2>Prediction history</h2>
+          ${history.length > 1 ? `<div id="history-chart" class="chart-box" style="min-height:220px"></div>` : ""}
+          <div class="table-wrap"><table>
+            <thead><tr><th>Prediction</th><th>Probability</th><th>Outcome</th></tr></thead>
+            <tbody>${history.map((h) => `<tr><td>#${h.prediction_id}</td><td>${percent(h.readmission_probability)}</td><td>${h.prediction === 1 ? "Readmission flagged" : "Not flagged"}</td></tr>`).join("")}</tbody>
+          </table></div>
+          <p class="muted" style="margin-top:.75rem;font-size:.85rem">The threshold is 50%: the model flags a patient when the probability reaches it. Each re-run is saved here, so edit the patient and run again to see how changes affect the result.</p>
+        </div>`;
+
+      loadCharts(["gauge", "corechart"], () => drawCharts(latest, history), ["gauge", "history-chart"]);
+    }
+
+    function item(label, value) {
+      return `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
+    }
+
+    function drawCharts(latest, history) {
+      // Gauge from Google Charts
+      const data = google.visualization.arrayToDataTable([["Label", "Value"], ["Risk %", Math.round(latest.readmission_probability * 1000) / 10]]);
+      new google.visualization.Gauge(document.getElementById("gauge")).draw(data, {
+        min: 0, max: 100, width: 300, height: 200,
+        greenFrom: 0, greenTo: 25, yellowFrom: 25, yellowTo: 50, redFrom: 50, redTo: 100, minorTicks: 5,
+      });
+
+      if (history.length > 1) {
+        const textColor = getComputedStyle(document.body).getPropertyValue("--muted").trim();
+        const rows = [...history].reverse().map((h) => ["#" + h.prediction_id, h.readmission_probability * 100]);
+        const line = google.visualization.arrayToDataTable([["Prediction", "Probability %"], ...rows]);
+        new google.visualization.LineChart(document.getElementById("history-chart")).draw(line, {
+          backgroundColor: "transparent", legend: "none", colors: ["#0e7c86"], pointSize: 6,
+          hAxis: { textStyle: { color: textColor } }, vAxis: { minValue: 0, maxValue: 100, textStyle: { color: textColor } },
+          chartArea: { width: "85%", height: "70%" },
+        });
+      }
+    }
+
+    document.getElementById("rerun").addEventListener("click", async (event) => {
+      event.target.disabled = true;
+      try {
+        await api.predict(patientId);
+        showToast("New prediction saved", "success");
+        await loadResult();
+      } catch (error) { showToast(error.message, "error"); }
+      event.target.disabled = false;
+    });
+
+    loadResult();
+  </script>
+</body>
+</html>

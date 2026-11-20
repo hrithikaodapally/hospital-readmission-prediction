@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+patients.db
+.ipynb_checkpoints/
+# CareLoop local database and environment files
+careloop.db
+careloop.db-journal
+patients.db
+*.db-shm
+*.db-wal
+.env

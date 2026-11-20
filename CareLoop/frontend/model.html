@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLoop – Model</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Google Charts (Google API) -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>About the model</h1>
+        <p class="muted">Three models were trained on the same preprocessed UCI Diabetes 130-US Hospitals data and compared on the same test split (20,153 rows).</p>
+      </div>
+    </div>
+
+    <div class="grid cols-4">
+      <div class="card stat"><div class="label">Serving predictions</div><div class="value" id="serving" style="font-size:1.3rem">–</div><div class="hint">model loaded by the API</div></div>
+      <div class="card stat"><div class="label">Best F1 in comparison</div><div class="value" id="best" style="font-size:1.3rem">–</div><div class="hint" id="best-hint">&nbsp;</div></div>
+      <div class="card stat"><div class="label">Target</div><div class="value" style="font-size:1.3rem">30-day readmission</div><div class="hint">1 = readmitted within 30 days</div></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>Metrics by model</h2>
+      <div id="chart" class="chart-box" style="min-height:340px"></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>Comparison table</h2>
+      <div class="table-wrap" id="table"></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>How to read this</h2>
+      <p id="reason" class="muted"></p>
+      <p class="muted"><strong>Precision</strong> – of the patients flagged, how many were really readmitted. <strong>Recall</strong> – of the patients really readmitted, how many were caught. Only about 1 in 9 patients is readmitted within 30 days, so accuracy alone can look good while missing most real cases.</p>
+      <div class="notice" id="warning" style="margin-bottom:0"></div>
+    </div>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    const NAMES = { decision_tree: "Decision Tree", logistic_regression: "Logistic Regression", random_forest: "Random Forest" };
+    const METRICS = [["accuracy", "Accuracy"], ["precision", "Precision"], ["recall", "Recall"], ["f1_score", "F1 score"], ["roc_auc", "ROC-AUC"]];
+
+    async function loadModel() {
+      try {
+        const [info, health] = await Promise.all([api.modelInfo(), api.health()]);
+        document.getElementById("serving").textContent = health.model;
+        document.getElementById("best").textContent = info.selected_model;
+        document.getElementById("best-hint").textContent = "highest F1 score";
+        document.getElementById("reason").textContent = info.reason;
+        document.getElementById("warning").textContent = info.warning;
+
+        const keys = Object.keys(info.results);
+        document.getElementById("table").innerHTML = `<table>
+          <thead><tr><th>Model</th>${METRICS.map((m) => `<th>${m[1]}</th>`).join("")}</tr></thead>
+          <tbody>${keys.map((k) => `<tr><td><strong>${NAMES[k] || k}</strong></td>${METRICS.map((m) => `<td>${info.results[k][m[0]].toFixed(4)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+
+        loadCharts(["corechart"], () => draw(info, keys), ["chart"]);
+      } catch (error) {
+        document.getElementById("chart").innerHTML = `<div class="empty">Could not load model information.<br><small>${esc(error.message)}</small></div>`;
+      }
+    }
+
+    function draw(info, keys) {
+      const textColor = getComputedStyle(document.body).getPropertyValue("--muted").trim();
+      const header = ["Metric", ...keys.map((k) => NAMES[k] || k)];
+      const rows = METRICS.map((m) => [m[1], ...keys.map((k) => info.results[k][m[0]])]);
+      const data = google.visualization.arrayToDataTable([header, ...rows]);
+      new google.visualization.ColumnChart(document.getElementById("chart")).draw(data, {
+        backgroundColor: "transparent", colors: ["#8aa5b8", "#0e7c86", "#c98b2b"],
+        legend: { position: "top", textStyle: { color: textColor } },
+        hAxis: { textStyle: { color: textColor } },
+        vAxis: { minValue: 0, maxValue: 1, format: "0.0", textStyle: { color: textColor } },
+        chartArea: { width: "88%", height: "70%" },
+      });
+    }
+
+    loadModel();
+  </script>
+</body>
+</html>

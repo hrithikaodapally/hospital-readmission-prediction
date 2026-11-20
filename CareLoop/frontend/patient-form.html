@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLoop – Patient form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-head">
+      <div>
+        <h1 id="form-title">Register a patient</h1>
+        <p class="muted">Enter the details of the hospital stay. All fields are required by the model; blank lab results mean "not measured".</p>
+      </div>
+      <button class="btn ghost" type="button" id="sample-btn">Fill sample data</button>
+    </div>
+
+    <form id="patient-form" novalidate>
+      <fieldset>
+        <legend>Patient</legend>
+        <div class="fields">
+          <div class="field"><label for="patient_label">Name / reference (optional)</label><input id="patient_label" name="patient_label" type="text" maxlength="60" placeholder="e.g. Bed 12 – R. Kumar"><div class="help">Only for your reference – not used by the model.</div></div>
+          <div class="field"><label for="race">Race</label><select id="race" name="race"></select></div>
+          <div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option>Female</option><option>Male</option></select></div>
+          <div class="field"><label for="age">Age group</label><select id="age" name="age"></select></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Admission</legend>
+        <div class="fields">
+          <div class="field"><label for="admission_type_id">Admission type</label><select id="admission_type_id" name="admission_type_id"></select></div>
+          <div class="field"><label for="admission_source_id">Admission source</label><select id="admission_source_id" name="admission_source_id"></select></div>
+          <div class="field"><label for="discharge_disposition_id">Discharge to</label><select id="discharge_disposition_id" name="discharge_disposition_id"></select></div>
+          <div class="field"><label for="medical_specialty">Medical specialty</label><select id="medical_specialty" name="medical_specialty"></select></div>
+          <div class="field"><label for="time_in_hospital">Days in hospital</label><input id="time_in_hospital" name="time_in_hospital" type="number" min="1" max="14" value="3"><div class="help">1 to 14</div></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Clinical activity</legend>
+        <div class="fields">
+          <div class="field"><label for="num_lab_procedures">Lab procedures</label><input id="num_lab_procedures" name="num_lab_procedures" type="number" min="0" max="150" value="40"></div>
+          <div class="field"><label for="num_procedures">Other procedures</label><input id="num_procedures" name="num_procedures" type="number" min="0" max="10" value="0"></div>
+          <div class="field"><label for="num_medications">Medications given</label><input id="num_medications" name="num_medications" type="number" min="0" max="100" value="10"></div>
+          <div class="field"><label for="number_diagnoses">Number of diagnoses</label><input id="number_diagnoses" name="number_diagnoses" type="number" min="1" max="16" value="5"></div>
+          <div class="field"><label for="number_outpatient">Outpatient visits (past year)</label><input id="number_outpatient" name="number_outpatient" type="number" min="0" max="50" value="0"></div>
+          <div class="field"><label for="number_emergency">Emergency visits (past year)</label><input id="number_emergency" name="number_emergency" type="number" min="0" max="50" value="0"></div>
+          <div class="field"><label for="number_inpatient">Inpatient visits (past year)</label><input id="number_inpatient" name="number_inpatient" type="number" min="0" max="30" value="0"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Diagnoses and lab results</legend>
+        <div class="fields">
+          <div class="field"><label for="diag_1">Primary diagnosis (ICD-9)</label><input id="diag_1" name="diag_1" type="text" placeholder="e.g. 250.83" required></div>
+          <div class="field"><label for="diag_2">Secondary diagnosis</label><input id="diag_2" name="diag_2" type="text" placeholder="optional"></div>
+          <div class="field"><label for="diag_3">Additional diagnosis</label><input id="diag_3" name="diag_3" type="text" placeholder="optional"></div>
+          <div class="field"><label for="max_glu_serum">Glucose serum test</label>
+            <select id="max_glu_serum" name="max_glu_serum"><option value="">Not measured</option><option>Norm</option><option>&gt;200</option><option>&gt;300</option></select></div>
+          <div class="field"><label for="A1Cresult">HbA1c result</label>
+            <select id="A1Cresult" name="A1Cresult"><option value="">Not measured</option><option>Norm</option><option>&gt;7</option><option>&gt;8</option></select></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Diabetes medication</legend>
+        <div class="fields">
+          <div class="field"><label for="insulin">Insulin</label><select id="insulin" name="insulin" class="med"></select></div>
+          <div class="field"><label for="metformin">Metformin</label><select id="metformin" name="metformin" class="med"></select></div>
+          <div class="field"><label for="change">Medication changed during stay?</label><select id="change" name="change"><option value="No">No change</option><option value="Ch">Changed</option></select></div>
+          <div class="field"><label for="diabetesMed">Diabetes medication prescribed?</label><select id="diabetesMed" name="diabetesMed"><option>Yes</option><option>No</option></select></div>
+        </div>
+        <details>
+          <summary>Other diabetes drugs (all default to "No")</summary>
+          <div class="fields" id="other-meds" style="margin-top:.75rem"></div>
+        </details>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn" type="submit" data-predict="true" id="save-predict">Save &amp; predict risk</button>
+        <button class="btn ghost" type="submit" data-predict="false" id="save-only">Save only</button>
+        <a class="btn ghost" href="patients.html">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/patient-form.js"></script>
+</body>
+</html>

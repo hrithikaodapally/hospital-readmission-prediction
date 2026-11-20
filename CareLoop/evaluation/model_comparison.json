@@ -1,0 +1,31 @@
+{
+    "comparison_basis": "Same preprocessed training and test split for all three models.",
+    "selection_criterion": "F1 score, with recall and ROC-AUC also considered because missing a readmission case is important.",
+    "selected_model": "Logistic Regression",
+    "selected_model_folder": "models/logistic_regression/",
+    "reason": "Logistic Regression achieved the highest F1 score among the three tested models. Decision Tree had slightly higher recall, while Random Forest had higher accuracy but substantially lower recall. Accuracy alone was not used to select the model.",
+    "warning": "The scores are modest and should be treated as an academic demonstration, not a clinical decision tool.",
+    "results": {
+        "decision_tree": {
+            "accuracy": 0.5973800426735474,
+            "precision": 0.14695085849615158,
+            "recall": 0.5769409576940958,
+            "f1_score": 0.23423933559833898,
+            "roc_auc": 0.6074559436058321
+        },
+        "logistic_regression": {
+            "accuracy": 0.6554359152483501,
+            "precision": 0.16645789839944328,
+            "recall": 0.5560204556020456,
+            "f1_score": 0.25621251071122536,
+            "roc_auc": 0.6558402442086217
+        },
+        "random_forest": {
+            "accuracy": 0.8523792983674887,
+            "precision": 0.256788665879575,
+            "recall": 0.20223152022315202,
+            "f1_score": 0.22626788036410922,
+            "roc_auc": 0.6729536637568707
+        }
+    }
+}

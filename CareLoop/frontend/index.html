@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareLoop – Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Google Charts (Google API) -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <section class="hero">
+      <h1>Spot 30-day readmission risk early</h1>
+      <p>CareLoop helps a care team record a diabetic patient's hospital stay and get a readmission risk estimate from the selected Logistic Regression model trained on the UCI Diabetes 130-US Hospitals dataset.</p>
+      <a class="btn light" href="patient-form.html">＋ Register a patient</a>
+    </section>
+
+    <div id="offline" class="notice" hidden>
+      Can't reach the API. Start the server with <code>python -m uvicorn backend.main:app --reload</code> and reload this page.
+    </div>
+
+    <section class="grid cols-4" id="stats">
+      <div class="card stat"><div class="label">Patients registered</div><div class="value" id="s-patients">–</div><div class="hint">saved in the database</div></div>
+      <div class="card stat"><div class="label">Predictions made</div><div class="value" id="s-predictions">–</div><div class="hint">across all patients</div></div>
+      <div class="card stat"><div class="label">Flagged high-risk</div><div class="value" id="s-high">–</div><div class="hint">probability ≥ 50%</div></div>
+      <div class="card stat"><div class="label">Average probability</div><div class="value" id="s-avg">–</div><div class="hint">mean readmission risk</div></div>
+    </section>
+
+    <section class="grid cols-2" style="margin-top:1rem">
+      <div class="card"><h2>Risk outcome split</h2><div id="chart-split" class="chart-box"></div></div>
+      <div class="card"><h2>Probability distribution</h2><div id="chart-dist" class="chart-box"></div></div>
+    </section>
+
+    <section class="card" style="margin-top:1rem">
+      <div class="page-head" style="margin-bottom:.5rem">
+        <h2 style="margin:0">Recent predictions</h2>
+        <a href="patients.html">View all patients →</a>
+      </div>
+      <div class="table-wrap" id="recent"><div class="empty"><span class="spinner"></span></div></div>
+    </section>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    async function loadDashboard() {
+      try {
+        // Both requests run at the same time
+        const [stats, predictions] = await Promise.all([api.stats(), api.listPredictions()]);
+
+        document.getElementById("s-patients").textContent = stats.total_patients;
+        document.getElementById("s-predictions").textContent = stats.total_predictions;
+        document.getElementById("s-high").textContent = stats.high_risk_predictions;
+        document.getElementById("s-avg").textContent = stats.total_predictions ? percent(stats.average_probability) : "–";
+
+        renderRecent(predictions.slice(0, 8));
+        loadCharts(["corechart"], () => drawCharts(predictions), ["chart-split", "chart-dist"]);
+      } catch (error) {
+        document.getElementById("offline").hidden = false;
+        document.getElementById("recent").innerHTML = `<div class="empty">No data available.</div>`;
+      }
+    }
+
+    function renderRecent(rows) {
+      const box = document.getElementById("recent");
+      if (rows.length === 0) {
+        box.innerHTML = `<div class="empty">No predictions yet. <a href="patient-form.html">Register a patient</a> and run one.</div>`;
+        return;
+      }
+      box.innerHTML = `<table>
+        <thead><tr><th>Prediction</th><th>Patient</th><th>Probability</th><th>Risk</th><th></th></tr></thead>
+        <tbody>${rows.map((r) => {
+          const risk = riskLevel(r.readmission_probability, r.prediction);
+          return `<tr>
+            <td>#${r.prediction_id}</td>
+            <td><a href="result.html?id=${r.patient_id}">Patient #${r.patient_id}</a></td>
+            <td>${percent(r.readmission_probability)}</td>
+            <td><span class="badge ${risk.css}">${risk.name}</span></td>
+            <td><a href="result.html?id=${r.patient_id}">Open</a></td>
+          </tr>`;
+        }).join("")}</tbody></table>`;
+    }
+
+    function drawCharts(predictions) {
+      const textColor = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#5d6f82";
+      const common = { backgroundColor: "transparent", legend: { textStyle: { color: textColor } }, chartArea: { width: "85%", height: "75%" } };
+
+      // Donut: flagged vs not flagged
+      const high = predictions.filter((p) => p.prediction === 1).length;
+      const split = google.visualization.arrayToDataTable([
+        ["Outcome", "Predictions"],
+        ["Readmission flagged", high],
+        ["Not flagged", predictions.length - high],
+      ]);
+      new google.visualization.PieChart(document.getElementById("chart-split")).draw(split, {
+        ...common, pieHole: 0.55, colors: ["#c0392b", "#0e7c86"], pieSliceText: "value",
+        title: predictions.length ? "" : "No predictions yet",
+      });
+
+      // Column chart: how many predictions fall in each probability band
+      const bands = [0, 0, 0, 0, 0];
+      predictions.forEach((p) => { bands[Math.min(4, Math.floor(p.readmission_probability * 5))]++; });
+      const labels = ["0–20%", "20–40%", "40–60%", "60–80%", "80–100%"];
+      const dist = google.visualization.arrayToDataTable([["Probability", "Patients"], ...labels.map((l, i) => [l, bands[i]])]);
+      new google.visualization.ColumnChart(document.getElementById("chart-dist")).draw(dist, {
+        ...common, legend: "none", colors: ["#0e7c86"],
+        hAxis: { textStyle: { color: textColor } },
+        vAxis: { textStyle: { color: textColor }, minValue: 0, format: "0" },
+      });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
